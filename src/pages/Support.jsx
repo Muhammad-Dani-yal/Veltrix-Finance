@@ -1,0 +1,8 @@
+import { useState } from 'react'
+import { FiHelpCircle, FiSend } from 'react-icons/fi'
+import toast from 'react-hot-toast'
+import Button from '../components/ui/Button'
+import PageHeader from '../components/ui/PageHeader'
+import { useOutletContext } from 'react-router-dom'
+import { submitSupportRequest } from '../services/bankRepository'
+export default function Support(){const {name,userId,profile}=useOutletContext();const [message,setMessage]=useState('');const [busy,setBusy]=useState(false);const submit=async e=>{e.preventDefault();setBusy(true);try{await submitSupportRequest({customerId:profile?.customerId||userId,customer:name,message});toast.success('Support request submitted.');setMessage('')}catch(error){toast.error(error.message)}finally{setBusy(false)}};return <><PageHeader eyebrow="Customer assistance" title="Help & Support"/><section className="settings-layout"><article className="panel settings-panel"><div className="panel-heading"><div><h2>How can we help?</h2><p>Submit a non-financial support query</p></div></div><form className="settings-body" onSubmit={submit}><label><span><FiHelpCircle/> Your question</span><textarea value={message} onChange={e=>setMessage(e.target.value)} required rows="6"/></label><Button disabled={busy}><FiSend/> {busy?'Sending…':'Send request'}</Button></form></article><article className="panel settings-panel"><div className="panel-heading"><div><h2>Important</h2><p>Financial actions must use structured requests</p></div></div><div className="settings-body"><p className="form-security">Never share your password. Deposit, withdrawal, donation, zakat and loan actions must be submitted from Financial Requests and approved by authorized staff.</p></div></article></section></>}

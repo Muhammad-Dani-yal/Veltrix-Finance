@@ -1,0 +1,1 @@
+export default function StatusBadge({ status, variant }) { const tone = variant || ({ active: 'success', approved: 'success', online: 'success', pending: 'warning', medium: 'warning', high: 'danger', rejected: 'danger', inactive: 'neutral' }[String(status).toLowerCase()] || 'neutral'); return <span className={`status-badge status-${tone}`}>{status}</span> }
