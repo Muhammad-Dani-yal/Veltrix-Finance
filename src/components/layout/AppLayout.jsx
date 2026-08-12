@@ -4,6 +4,7 @@ import { MANAGER_EMAIL, useAuth } from '../../context/AuthContext'
 import { roleNavigation } from '../../config/navigation'
 import Topbar from './Topbar'
 import Sidebar from './Sidebar'
+import CustomerShell from './CustomerShell'
 
 export default function AppLayout() {
   const { user, profile, logout } = useAuth()
@@ -11,6 +12,8 @@ export default function AppLayout() {
   const role = user.email?.toLowerCase() === MANAGER_EMAIL ? 'manager' : (profile?.role || 'customer')
   const links = roleNavigation[role]
   const name = profile?.name || user.displayName || user.email?.split('@')[0] || 'Muhammad Ali'
+
+  if (role === 'customer') return <CustomerShell name={name} userId={user.uid} profile={{...profile,email:user.email}} links={links} onLogout={logout}/>
 
   return (
     <div className="layout creative-shell">

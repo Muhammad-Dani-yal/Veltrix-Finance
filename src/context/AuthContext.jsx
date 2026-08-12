@@ -1,11 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth'
+import { createContext, useContext, useEffect, useState } from 'react'
+import { EmailAuthProvider, onAuthStateChanged, reauthenticateWithCredential, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, updatePassword, updateProfile } from 'firebase/auth'
 import { get, onDisconnect, onValue, ref, serverTimestamp, set, update } from 'firebase/database'
 import { auth, database } from '../services/firebase'
 
 /* oxlint-disable react/only-export-components */
 const AuthContext = createContext(null)
-export const MANAGER_EMAIL = 'muhammaddaniyal5477@gmail.com'
+export const MANAGER_EMAIL = String(import.meta.env.VITE_MANAGER_EMAIL || '').trim().toLowerCase()
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -66,7 +66,18 @@ export function AuthProvider({ children }) {
     await update(ref(database, `users/${auth.currentUser.uid}`), { name: cleanName, updatedAt: Date.now() })
     setProfile(current => ({ ...current, name: cleanName }))
   }
-  const value = useMemo(() => ({ user, profile, loading, login, logout, updateDisplayName }), [user, profile, loading])
+  const changeCustomerPassword = async (currentPassword, newPassword) => {
+    if (!auth.currentUser || profile?.role !== 'customer') throw new Error('Only customers can change their own password here.')
+    if (String(newPassword).length < 8) throw new Error('New password must contain at least 8 characters.')
+    const credential=EmailAuthProvider.credential(auth.currentUser.email,currentPassword)
+    await reauthenticateWithCredential(auth.currentUser,credential)
+    await updatePassword(auth.currentUser,newPassword)
+  }
+  const sendPasswordReset = async email => {
+    const cleanEmail=String(email||'').trim().toLowerCase();if(!cleanEmail)throw new Error('Enter the registered email address first.')
+    await sendPasswordResetEmail(auth,cleanEmail)
+  }
+  const value = { user, profile, loading, login, logout, updateDisplayName, changeCustomerPassword, sendPasswordReset }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 export function useAuth() { return useContext(AuthContext) }

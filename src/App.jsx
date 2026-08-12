@@ -1,24 +1,16 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 import { AuthProvider, MANAGER_EMAIL, useAuth } from './context/AuthContext'
 import AppLayout from './components/layout/AppLayout'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Items from './pages/Items'
-import Employees from './pages/Employees'
-import Customers from './pages/Customers'
-import Requests from './pages/Requests'
-import Settings from './pages/Settings'
-import Cards from './pages/Cards'
-import Support from './pages/Support'
-import Reports from './pages/Reports'
-import NotFound from './pages/NotFound'
 import AppToaster from './components/feedback/AppToaster'
 import './App.css'
 import './theme.css'
+
+const Login=lazy(()=>import('./pages/Login'));const Dashboard=lazy(()=>import('./pages/Dashboard'));const Items=lazy(()=>import('./pages/Items'));const Employees=lazy(()=>import('./pages/Employees'));const Customers=lazy(()=>import('./pages/Customers'));const Requests=lazy(()=>import('./pages/Requests'));const Transfers=lazy(()=>import('./pages/Transfers'));const Settings=lazy(()=>import('./pages/Settings'));const Cards=lazy(()=>import('./pages/Cards'));const Support=lazy(()=>import('./pages/Support'));const SupportQueue=lazy(()=>import('./pages/SupportQueue'));const Reports=lazy(()=>import('./pages/Reports'));const NotFound=lazy(()=>import('./pages/NotFound'))
 
 function resolvedRole(user, profile) { return user?.email?.toLowerCase() === MANAGER_EMAIL ? 'manager' : profile?.role }
 function destination(role) { return role === 'customer' ? '/customer' : role === 'employee' || role === 'manager' ? '/staff' : '/' }
 function PublicRoute({ children }) { const {user,profile,loading}=useAuth(); if(loading)return <div className="page-loader">Loading...</div>; return user&&profile?<Navigate to={destination(resolvedRole(user,profile))} replace/>:children }
 function PortalRoute({portal,children}) { const {user,profile,loading,logout}=useAuth(); if(loading)return <div className="page-loader">Loading...</div>; if(!user)return <Navigate to="/" replace/>; if(!profile)return <main className="access-error"><h1>Profile unavailable</h1><p>This login has no authorized banking profile. Contact an administrator.</p><button onClick={logout}>Sign out</button></main>; const role=resolvedRole(user,profile); const allowed=portal==='customer'?role==='customer':role==='employee'||role==='manager'; return allowed?children:<Navigate to={destination(role)} replace/> }
-function AppRoutes(){return <Routes><Route path="/" element={<PublicRoute><Login/></PublicRoute>}/><Route path="/login" element={<Navigate to="/" replace/>}/><Route path="/customer" element={<PortalRoute portal="customer"><AppLayout/></PortalRoute>}><Route index element={<Dashboard/>}/><Route path="transactions" element={<Items/>}/><Route path="requests" element={<Requests/>}/><Route path="loans" element={<Requests/>}/><Route path="cards" element={<Cards/>}/><Route path="support" element={<Support/>}/><Route path="settings" element={<Settings/>}/></Route><Route path="/staff" element={<PortalRoute portal="staff"><AppLayout/></PortalRoute>}><Route index element={<Dashboard/>}/><Route path="queue" element={<Items/>}/><Route path="customers" element={<Customers/>}/><Route path="requests" element={<Requests/>}/><Route path="employees" element={<Employees/>}/><Route path="reports" element={<Reports/>}/><Route path="settings" element={<Settings/>}/></Route><Route path="/dashboard/*" element={<Navigate to="/" replace/>}/><Route path="*" element={<NotFound/>}/></Routes>}
+function AppRoutes(){return <Suspense fallback={<div className="page-loader">Loading workspace…</div>}><Routes><Route path="/" element={<PublicRoute><Login/></PublicRoute>}/><Route path="/login" element={<Navigate to="/" replace/>}/><Route path="/customer" element={<PortalRoute portal="customer"><AppLayout/></PortalRoute>}><Route index element={<Dashboard/>}/><Route path="transfers" element={<Transfers/>}/><Route path="transactions" element={<Items/>}/><Route path="requests" element={<Requests/>}/><Route path="loans" element={<Requests/>}/><Route path="cards" element={<Cards/>}/><Route path="support" element={<Support/>}/><Route path="settings" element={<Settings/>}/></Route><Route path="/staff" element={<PortalRoute portal="staff"><AppLayout/></PortalRoute>}><Route index element={<Dashboard/>}/><Route path="queue" element={<Items/>}/><Route path="customers" element={<Customers/>}/><Route path="requests" element={<Requests/>}/><Route path="support" element={<SupportQueue/>}/><Route path="employees" element={<Employees/>}/><Route path="reports" element={<Reports/>}/><Route path="settings" element={<Settings/>}/></Route><Route path="/dashboard/*" element={<Navigate to="/" replace/>}/><Route path="*" element={<NotFound/>}/></Routes></Suspense>}
 export default function App(){return <AuthProvider><AppRoutes/><AppToaster/></AuthProvider>}

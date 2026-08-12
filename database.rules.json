@@ -17,6 +17,29 @@
         ".validate": "newData.hasChildren(['uid','name','email','accountNumber','balance','status','createdAt']) && newData.child('uid').val() === $customerId && newData.child('balance').isNumber() && newData.child('balance').val() >= 0 && newData.child('status').val() === 'active'"
       }
     },
+    "accountNumbers": {
+      "$accountNumber": {
+        ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'employee' || root.child('users').child(auth.uid).child('role').val() === 'manager')",
+        ".write": "auth != null && !data.exists() && (root.child('users').child(auth.uid).child('role').val() === 'employee' || root.child('users').child(auth.uid).child('role').val() === 'manager')",
+        ".validate": "newData.isString()"
+      }
+    },
+    "beneficiaries": {
+      "$ownerId": {
+        ".read": "auth != null && auth.uid === $ownerId",
+        "$beneficiaryId": {
+          ".write": "auth != null && auth.uid === $ownerId",
+          ".validate": "!newData.exists() || (newData.hasChildren(['recipientId','accountNumber','accountTitle','nickname','createdAt']) && newData.child('recipientId').isString() && newData.child('recipientId').val() !== auth.uid && newData.child('accountNumber').isString() && newData.child('accountTitle').isString() && newData.child('nickname').isString() && newData.child('nickname').val().length >= 2 && newData.child('nickname').val().length <= 40 && newData.child('createdAt').isNumber())"
+        }
+      }
+    },
+    "publicAccounts": {
+      "$accountNumber": {
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists() && (root.child('users').child(auth.uid).child('role').val() === 'employee' || root.child('users').child(auth.uid).child('role').val() === 'manager')",
+        ".validate": "newData.hasChildren(['uid','accountTitle','status']) && newData.child('uid').isString() && newData.child('uid').val().length > 0 && newData.child('accountTitle').isString() && newData.child('accountTitle').val().length > 0 && newData.child('accountTitle').val().length <= 120 && newData.child('status').val() === 'active'"
+      }
+    },
     "employees": {
       ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'manager'",
       "$employeeId": {
@@ -29,7 +52,7 @@
       ".indexOn": ["customerId", "status", "authority"],
       "$loanId": {
         ".write": "auth != null && ((!data.exists() && newData.child('customerId').val() === auth.uid && newData.child('status').val() === 'pending') || (data.exists() && data.child('status').val() === 'pending' && (newData.child('status').val() === 'approved' || newData.child('status').val() === 'rejected') && ((data.child('amount').val() <= 1000000 && root.child('users').child(auth.uid).child('role').val() === 'employee') || (data.child('amount').val() > 1000000 && root.child('users').child(auth.uid).child('role').val() === 'manager'))))",
-        ".validate": "newData.hasChildren(['customerId','customer','amount','purpose','duration','status','authority','createdAt']) && newData.child('amount').isNumber() && newData.child('amount').val() > 0 && ((newData.child('amount').val() > 1000000 && newData.child('authority').val() === 'manager') || (newData.child('amount').val() <= 1000000 && newData.child('authority').val() === 'employee')) && (!data.exists() || (newData.child('customerId').val() === data.child('customerId').val() && newData.child('amount').val() === data.child('amount').val() && newData.child('authority').val() === data.child('authority').val()))"
+        ".validate": "newData.hasChildren(['customerId','customer','amount','purpose','duration','status','authority','createdAt']) && newData.child('amount').isNumber() && newData.child('amount').val() > 0 && ((newData.child('amount').val() > 1000000 && newData.child('authority').val() === 'manager') || (newData.child('amount').val() <= 1000000 && newData.child('authority').val() === 'employee')) && (!data.exists() || (newData.child('customerId').val() === data.child('customerId').val() && newData.child('customer').val() === data.child('customer').val() && newData.child('amount').val() === data.child('amount').val() && newData.child('purpose').val() === data.child('purpose').val() && newData.child('duration').val() === data.child('duration').val() && newData.child('notes').val() === data.child('notes').val() && newData.child('authority').val() === data.child('authority').val() && newData.child('createdAt').val() === data.child('createdAt').val()))"
       }
     },
     "transactions": {
@@ -37,22 +60,30 @@
       ".indexOn": ["customerId", "status", "type"],
       "$transactionId": {
         ".write": "auth != null && ((!data.exists() && newData.child('customerId').val() === auth.uid && newData.child('status').val() === 'pending') || (data.exists() && data.child('status').val() === 'pending' && (newData.child('status').val() === 'approved' || newData.child('status').val() === 'rejected') && (root.child('users').child(auth.uid).child('role').val() === 'employee' || root.child('users').child(auth.uid).child('role').val() === 'manager')))",
-        ".validate": "newData.hasChildren(['customerId','customer','type','amount','status','createdAt']) && newData.child('amount').isNumber() && newData.child('amount').val() > 0 && (newData.child('type').val() === 'deposit' || newData.child('type').val() === 'withdrawal' || newData.child('type').val() === 'donation' || newData.child('type').val() === 'zakat') && (!data.exists() || (newData.child('customerId').val() === data.child('customerId').val() && newData.child('type').val() === data.child('type').val() && newData.child('amount').val() === data.child('amount').val()))"
+        ".validate": "newData.hasChildren(['customerId','customer','type','amount','status','createdAt']) && newData.child('amount').isNumber() && newData.child('amount').val() > 0 && (newData.child('type').val() === 'deposit' || newData.child('type').val() === 'withdrawal' || newData.child('type').val() === 'donation' || newData.child('type').val() === 'zakat') && (!data.exists() || (newData.child('customerId').val() === data.child('customerId').val() && newData.child('customer').val() === data.child('customer').val() && newData.child('type').val() === data.child('type').val() && newData.child('amount').val() === data.child('amount').val() && newData.child('notes').val() === data.child('notes').val() && newData.child('createdAt').val() === data.child('createdAt').val()))"
+      }
+    },
+    "transfers": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'employee' || root.child('users').child(auth.uid).child('role').val() === 'manager' || (query.orderByChild === 'senderId' && query.equalTo === auth.uid) || (query.orderByChild === 'recipientId' && query.equalTo === auth.uid))",
+      ".indexOn": ["senderId", "recipientId", "status", "authority"],
+      "$transferId": {
+        ".write": "auth != null && ((!data.exists() && newData.child('senderId').val() === auth.uid && ((newData.child('amount').val() <= 250000 && newData.child('status').val() === 'completed' && newData.child('authority').val() === 'automatic') || (newData.child('amount').val() > 250000 && newData.child('status').val() === 'pending' && ((newData.child('amount').val() <= 500000 && newData.child('authority').val() === 'employee') || (newData.child('amount').val() > 500000 && newData.child('authority').val() === 'manager'))))) || (data.exists() && data.child('status').val() === 'pending' && (newData.child('status').val() === 'approved' || newData.child('status').val() === 'rejected') && ((data.child('amount').val() <= 500000 && root.child('users').child(auth.uid).child('role').val() === 'employee') || (data.child('amount').val() > 500000 && root.child('users').child(auth.uid).child('role').val() === 'manager'))))",
+        ".validate": "newData.hasChildren(['senderId','senderName','senderAccountNumber','recipientId','recipientTitle','recipientAccountNumber','amount','status','authority','createdAt']) && newData.child('senderId').isString() && newData.child('recipientId').isString() && newData.child('senderId').val() !== newData.child('recipientId').val() && newData.child('amount').isNumber() && newData.child('amount').val() > 0 && (!data.exists() || (newData.child('senderId').val() === data.child('senderId').val() && newData.child('recipientId').val() === data.child('recipientId').val() && newData.child('amount').val() === data.child('amount').val() && newData.child('authority').val() === data.child('authority').val() && newData.child('createdAt').val() === data.child('createdAt').val()))"
       }
     },
     "supportRequests": {
       ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'employee' || root.child('users').child(auth.uid).child('role').val() === 'manager' || (query.orderByChild === 'customerId' && query.equalTo === auth.uid))",
       ".indexOn": ["customerId", "status"],
       "$requestId": {
-        ".write": "auth != null && !data.exists() && newData.child('customerId').val() === auth.uid && newData.child('status').val() === 'pending'",
-        ".validate": "newData.hasChildren(['customerId','customer','message','status','createdAt']) && newData.child('message').isString() && newData.child('message').val().length >= 5 && newData.child('message').val().length <= 2000"
+        ".write": "auth != null && ((!data.exists() && newData.child('customerId').val() === auth.uid && newData.child('status').val() === 'pending') || (data.exists() && data.child('status').val() === 'pending' && (newData.child('status').val() === 'resolved' || newData.child('status').val() === 'rejected') && (root.child('users').child(auth.uid).child('role').val() === 'employee' || root.child('users').child(auth.uid).child('role').val() === 'manager')))",
+        ".validate": "newData.hasChildren(['customerId','customer','message','status','createdAt']) && newData.child('message').isString() && newData.child('message').val().length >= 5 && newData.child('message').val().length <= 2000 && (!data.exists() || (newData.child('customerId').val() === data.child('customerId').val() && newData.child('customer').val() === data.child('customer').val() && newData.child('message').val() === data.child('message').val() && newData.child('createdAt').val() === data.child('createdAt').val()))"
       }
     },
     "auditLogs": {
       ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'manager'",
       "$logId": {
         ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'employee' || root.child('users').child(auth.uid).child('role').val() === 'manager')",
-        ".validate": "newData.hasChildren(['action','createdAt'])"
+        ".validate": "newData.hasChildren(['action','actorId','actorRole','createdAt']) && newData.child('actorId').val() === auth.uid && newData.child('actorRole').val() === root.child('users').child(auth.uid).child('role').val()"
       }
     }
   }
